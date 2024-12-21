@@ -20,30 +20,27 @@ db = SQLAlchemy(app)
 #tambah data
 @app.route("/doctors/", methods=["POST"])
 def add_doctor():
-    print(f"Request JSON: {request.get_json()}")  # Log data yang diterima
+    print(f"Request JSON: {request.get_json()}")
 
     nama = request.get_json().get("nama_dokter")
     spesialisasi = request.get_json().get("spesialisasi")
     nomor_hp = request.get_json().get("nomor_hp")
 
-    # Pastikan semua field yang diperlukan ada
     if not nama or not spesialisasi or not nomor_hp:
         abort(400, description="Missing required fields: nama, spesialisasi, nomor_hp")
 
     try:
-        # Menggunakan waktu saat ini dari server
         jadwal_praktik_datetime = datetime.now()
     except Exception as e:
         print(f"Error: {e}")
         abort(500, description="Error saat mendapatkan waktu saat ini")
 
     try:
-        # Membuat dokter baru dengan waktu saat ini
         new_dokter = Dokter(
             nama_dokter=nama,
             spesialisasi=spesialisasi,
             nomor_hp=nomor_hp,
-            jadwal_praktik=jadwal_praktik_datetime  # Menggunakan waktu sekarang
+            jadwal_praktik=jadwal_praktik_datetime 
         )
         db.session.add(new_dokter)
         db.session.commit()
@@ -56,7 +53,7 @@ def add_doctor():
 #mengambil semua data dokter
 @app.route("/doctors/", methods=["GET"])
 def read_doctors():
-    doctors = db.session.query(Dokter).all()  # Menggunakan db.session
+    doctors = db.session.query(Dokter).all() 
     return jsonify([
         {
             "id_dokter": doctor.id_dokter,
@@ -86,23 +83,21 @@ def read_doctor(dokter_id):
 
 @app.route('/doctors/<int:id>', methods=['PUT'])
 def update_doctor(id):
-    db = next(get_db())  # Mengambil sesi database
-    data = request.get_json()  # Mengambil data JSON dari request
+    db = next(get_db())
+    data = request.get_json()
 
-    # Validasi data masuk
     if not data:
         return jsonify({"error": "Data tidak valid! Missing JSON payload"}), 400
     if 'nama_dokter' not in data or 'spesialisasi' not in data:
         return jsonify({"error": "Missing required fields: 'nama_dokter' or 'spesialisasi'"}), 400
 
-    # Query dokter berdasarkan ID
     doctor = db.query(Dokter).filter(Dokter.id_dokter == id).first()
 
-    # Periksa apakah dokter ditemukan
+  
     if doctor is None:
         return jsonify({"error": "Dokter tidak ditemukan!"}), 404
 
-    # Update data dokter
+  
     doctor.nama_dokter = data['nama_dokter']
     doctor.spesialisasi = data['spesialisasi']
     if 'nomor_hp' in data:
@@ -114,14 +109,12 @@ def update_doctor(id):
         except ValueError:
             return jsonify({"error": "Invalid date format for 'jadwal_praktik'. Use YYYY-MM-DD."}), 400
 
-    # Commit perubahan ke database
     try:
         db.commit()
     except Exception as e:
         db.rollback()
         return jsonify({"error": f"Failed to update doctor: {str(e)}"}), 500
 
-    # Return response dengan data yang diperbarui
     return jsonify({
         "id_dokter": doctor.id_dokter,
         "nama_dokter": doctor.nama_dokter,
@@ -133,17 +126,12 @@ def update_doctor(id):
 # Endpoint untuk menghapus dokter
 @app.route("/doctors/<int:doctor_id>", methods=["DELETE"])
 def delete_doctor_info(doctor_id):
-    db = next(get_db())  # Mengambil sesi database
-
-    # Query dokter berdasarkan ID
+    db = next(get_db()) 
     doctor = db.query(Dokter).filter(Dokter.id_dokter == doctor_id).first()
-
-    # Periksa apakah dokter ditemukan
     if not doctor:
         return jsonify({"error": "Doctor not found"}), 404
 
     try:
-        # Hapus data dokter
         db.delete(doctor)
         db.commit()
         return jsonify({"message": "Hapus data dokter berhasil"}), 200
